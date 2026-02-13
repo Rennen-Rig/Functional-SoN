@@ -3,7 +3,15 @@ use std::{ops::AddAssign, sync::Mutex};
 pub mod nodes;
 
 fn main() {
-    let _ = nodes::NodeID::START_NODE_ID;
+    let mut graph = nodes::Graph::new();
+
+    println!("{:?}", graph);
+
+    let c = graph.insert_node(nodes::Node::Constant { value: 2 });
+    println!("{:?}", graph);
+    let ret = graph.insert_node(nodes::Node::End { input: c });
+
+    println!("{:?}", graph);
 
     println!("Hello, world!");
 }
