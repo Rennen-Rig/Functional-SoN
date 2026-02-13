@@ -7,7 +7,9 @@ fn main() {
 
     println!("{:?}", graph);
 
-    let c = graph.insert_node(nodes::Node::Constant { value: 2 });
+    let c = graph.insert_node(nodes::Node::Constant {
+        value: nodes::PassedData::Int(2),
+    });
     println!("{:?}", graph);
     let ret = graph.insert_node(nodes::Node::End { input: c });
 

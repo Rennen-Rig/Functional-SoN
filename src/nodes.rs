@@ -8,6 +8,15 @@ impl NodeID {
     pub const START_NODE_ID: NodeID = NodeID(0);
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PassedData {
+    Bool(bool),
+    Float(ordered_float::OrderedFloat<f32>),
+    Int(i32),
+    UInt(u32),
+    Tuple(Box<Vec<PassedData>>),
+}
+
 /// Nodes make up a `Graph`, and each `Node` represents a computation of some kind
 /// (usually). Nodes (will) have an associated return type, which is computed based on
 /// their input types.
@@ -24,7 +33,7 @@ pub enum Node {
     End { input: NodeID },
 
     /// Remains constant after compilation.
-    Constant { value: i32 },
+    Constant { value: PassedData },
 
     /// Defines the start of a function.
     FunctionDeclaration {
@@ -35,6 +44,12 @@ pub enum Node {
         /// If `input` is not used, then the function is a constant function, which
         /// is only usually useful if the function itself is being passed around.
         body: NodeID,
+    },
+
+    /// To be used in the body of `FunctionDeclaration`
+    FunctionInput {
+        /// The associated function this input is for.
+        function: NodeID,
     },
 
     /// Represents calling a function.
@@ -138,16 +153,16 @@ impl Workgroup {
 }
 
 /// A `Graph` represents a program, composed of nodes. The structure of the graph
-/// represents inputs for computation. This differs from flow charts, where the
+/// represents inputs for computation.
+///
+/// This differs from flow charts, where the
 /// structure represents control flow.
 ///
-/// Nodes have some required inputs, and track which other nodes use them as
+/// - Nodes have some required inputs, and track which other nodes use them as
 /// inputs, to allow for modifying the graph faster.
-///
-/// If any two nodes are identical, they are treated as the same node to reduce
+/// - If any two nodes are identical, they are treated as the same node to reduce
 /// redundant computation.
-///
-/// Graphs will have no cycles, except for around recursive function calls.
+/// - Graphs will have no cycles, except for around recursive function calls.
 #[derive(Debug)]
 pub struct Graph {
     /// Stores all the nodes and their outputs in the graph.
