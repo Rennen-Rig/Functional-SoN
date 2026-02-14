@@ -101,10 +101,14 @@ impl Node {
             Start => vec![],
             End { input } => vec![input.clone()],
             Constant { value: _ } => vec![NodeID::START_NODE_ID],
+
             FunctionDeclaration { input, body } => vec![input.clone(), body.clone()],
+            FunctionInput { function } => vec![function.clone()],
             FunctionApplication { function, input } => vec![function.clone(), input.clone()],
+
             ConstructTuple { data } => data.clone(),
             GetTupleElement { from, at_index: _ } => vec![from.clone()],
+
             Equality { left, right } | Add { left, right } | Multiply { left, right } => {
                 vec![left.clone(), right.clone()]
             }
@@ -113,6 +117,60 @@ impl Node {
                 on_true,
                 on_false,
             } => vec![condition.clone(), on_true.clone(), on_false.clone()],
+        }
+    }
+
+    pub fn create_display_node(&self) -> layout::std_shapes::shapes::Element {
+        use Node::*;
+        use layout::{
+            core::{base::Orientation, geometry::Point, style::StyleAttr},
+            std_shapes::shapes::{Element, ShapeKind},
+        };
+
+        const ORIENTATION: Orientation = Orientation::TopToBottom;
+
+        match self {
+            Start => Element::create(
+                ShapeKind::DoubleCircle("Start".to_string()),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            End { input: _ } => Element::create(
+                ShapeKind::DoubleCircle("End".to_string()),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            Constant { value } => {
+                let text = match value {
+                    PassedData::Bool(_) => todo!(),
+                    PassedData::Float(ordered_float) => todo!(),
+                    PassedData::Int(_) => todo!(),
+                    PassedData::UInt(_) => todo!(),
+                    PassedData::Tuple(passed_datas) => todo!(),
+                };
+
+                Element::create(
+                    ShapeKind::DoubleCircle(text),
+                    StyleAttr::simple(),
+                    ORIENTATION,
+                    Point::new(50.0, 50.0),
+                )
+            }
+            FunctionDeclaration { input, body } => todo!(),
+            FunctionInput { function } => todo!(),
+            FunctionApplication { function, input } => todo!(),
+            ConstructTuple { data } => todo!(),
+            GetTupleElement { from, at_index } => todo!(),
+            Equality { left, right } => todo!(),
+            Add { left, right } => todo!(),
+            Multiply { left, right } => todo!(),
+            IfElse {
+                condition,
+                on_true,
+                on_false,
+            } => todo!(),
         }
     }
 }
@@ -222,5 +280,35 @@ impl Graph {
             self.workgroup.push(id);
             id
         }
+    }
+
+    pub fn create_image(&self, name: &str) -> Result<(), std::io::Error> {
+        use layout::{
+            backends::svg::SVGWriter,
+            core::{base::Orientation, geometry::Point, style::StyleAttr, utils::save_to_file},
+            std_shapes::shapes::{Arrow, Element, ShapeKind},
+            topo::layout::VisualGraph,
+        };
+
+        let mut vg = VisualGraph::new(Orientation::TopToBottom);
+
+        let node_shape = ShapeKind::new_box("text here");
+        let look = StyleAttr::simple();
+
+        let sz = Point::new(100.0, 100.0);
+
+        let node = Element::create(node_shape, look, Orientation::TopToBottom, sz);
+        let arrow = Arrow::simple("arrow?!");
+
+        let h0 = vg.add_node(node.clone());
+        let h1 = vg.add_node(node);
+
+        vg.add_edge(arrow, h0, h1);
+
+        let mut svg = SVGWriter::new();
+
+        vg.do_it(false, false, false, &mut svg);
+
+        save_to_file(format!("tmp/{}.svg", name).as_str(), &svg.finalize())
     }
 }

@@ -1,19 +1,10 @@
-use std::{ops::AddAssign, sync::Mutex};
+use crate::nodes::Graph;
 
 pub mod nodes;
+pub mod visuals;
 
 fn main() {
-    let mut graph = nodes::Graph::new();
+    let graph = Graph::new();
 
-    println!("{:?}", graph);
-
-    let c = graph.insert_node(nodes::Node::Constant {
-        value: nodes::PassedData::Int(2),
-    });
-    println!("{:?}", graph);
-    let ret = graph.insert_node(nodes::Node::End { input: c });
-
-    println!("{:?}", graph);
-
-    println!("Hello, world!");
+    graph.create_image("awesome_demo_graph").unwrap();
 }
