@@ -1,7 +1,6 @@
 use crate::nodes::{Graph, Node};
 
 pub mod nodes;
-pub mod visuals;
 
 fn main() {
     let mut graph = Graph::new();

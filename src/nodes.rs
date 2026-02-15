@@ -193,7 +193,7 @@ impl Node {
                 function: _,
                 input: _,
             } => Element::create(
-                ShapeKind::new_box("apply function"),
+                ShapeKind::new_circle("|>"),
                 StyleAttr::simple(),
                 ORIENTATION,
                 Point::new(50.0, 50.0),
