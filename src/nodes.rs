@@ -1,4 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
+
+use layout::std_shapes::shapes::RecordDef;
 
 /// Used to identify nodes. Creating two nodes with the same
 /// `NodeID` will cause a panic.
@@ -15,6 +20,32 @@ pub enum PassedData {
     Int(i32),
     UInt(u32),
     Tuple(Box<Vec<PassedData>>),
+}
+
+impl Display for PassedData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PassedData::Bool(boolean) => write!(f, "{}", boolean),
+            PassedData::Float(ordered_float) => write!(f, "{}", ordered_float),
+            PassedData::Int(int) => write!(f, "{} (int)", int),
+            PassedData::UInt(uint) => write!(f, "{} (uint)", uint),
+            PassedData::Tuple(tuple) => {
+                let mut text = "(".to_string();
+
+                for element in tuple.iter().take(tuple.len() - 1) {
+                    text += &(element.to_string() + ", ");
+                }
+
+                match tuple.last() {
+                    Some(element) => text += element.to_string().as_str(),
+                    None => {}
+                }
+                text += ")";
+
+                write!(f, "{}", text)
+            }
+        }
+    }
 }
 
 /// Nodes make up a `Graph`, and each `Node` represents a computation of some kind
@@ -131,46 +162,84 @@ impl Node {
 
         match self {
             Start => Element::create(
-                ShapeKind::DoubleCircle("Start".to_string()),
+                ShapeKind::new_double_circle("START"),
                 StyleAttr::simple(),
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             End { input: _ } => Element::create(
-                ShapeKind::DoubleCircle("End".to_string()),
+                ShapeKind::new_double_circle("END"),
                 StyleAttr::simple(),
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
-            Constant { value } => {
-                let text = match value {
-                    PassedData::Bool(_) => todo!(),
-                    PassedData::Float(ordered_float) => todo!(),
-                    PassedData::Int(_) => todo!(),
-                    PassedData::UInt(_) => todo!(),
-                    PassedData::Tuple(passed_datas) => todo!(),
-                };
-
-                Element::create(
-                    ShapeKind::DoubleCircle(text),
-                    StyleAttr::simple(),
-                    ORIENTATION,
-                    Point::new(50.0, 50.0),
-                )
-            }
-            FunctionDeclaration { input, body } => todo!(),
-            FunctionInput { function } => todo!(),
-            FunctionApplication { function, input } => todo!(),
-            ConstructTuple { data } => todo!(),
-            GetTupleElement { from, at_index } => todo!(),
-            Equality { left, right } => todo!(),
-            Add { left, right } => todo!(),
-            Multiply { left, right } => todo!(),
+            Constant { value } => Element::create(
+                ShapeKind::new_box(value.to_string().as_str()),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            FunctionDeclaration { input: _, body: _ } => Element::create(
+                ShapeKind::new_box("function definition"),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            FunctionInput { function: _ } => Element::create(
+                ShapeKind::new_box("input"),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            FunctionApplication {
+                function: _,
+                input: _,
+            } => Element::create(
+                ShapeKind::new_box("apply function"),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            ConstructTuple { data: _ } => Element::create(
+                ShapeKind::new_circle("Tuple"),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            GetTupleElement { from: _, at_index } => Element::create(
+                ShapeKind::new_circle(format!("Get element from index {}", at_index).as_str()),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            Equality { left: _, right: _ } => Element::create(
+                ShapeKind::new_circle("=="),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            Add { left: _, right: _ } => Element::create(
+                ShapeKind::new_circle("+"),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
+            Multiply { left: _, right: _ } => Element::create(
+                ShapeKind::new_circle("*"),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
             IfElse {
-                condition,
-                on_true,
-                on_false,
-            } => todo!(),
+                condition: _,
+                on_true: _,
+                on_false: _,
+            } => Element::create(
+                ShapeKind::new_box("if"),
+                StyleAttr::simple(),
+                ORIENTATION,
+                Point::new(50.0, 50.0),
+            ),
         }
     }
 }
