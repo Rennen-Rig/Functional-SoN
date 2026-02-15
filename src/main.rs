@@ -19,5 +19,5 @@ fn main() {
 
     let _n3 = graph.insert_node(Node::End { input: n2 });
 
-    graph.create_image("awesome_demo_graph").unwrap();
+    graph.create_image("example").unwrap();
 }

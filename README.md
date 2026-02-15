@@ -14,6 +14,12 @@ The latter half of the talk is much more relevent to this repo.
 the HotSpot JVM compiler, but the general concepts sitll apply here.
 
 
+## The IR
+An example program represented as a graph may be seen below
+
+![example program as graph](/generated_graphs/example.svg)
+
+
 ### Motivation
 All existing SoN IRs I am aware of are for imperative languages, but the concept
 seemed like it would map very well to a functional (especially pure) representation
