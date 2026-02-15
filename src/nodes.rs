@@ -3,8 +3,6 @@ use std::{
     fmt::Display,
 };
 
-use layout::std_shapes::shapes::RecordDef;
-
 /// Used to identify nodes. Creating two nodes with the same
 /// `NodeID` will cause a panic.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -353,26 +351,23 @@ impl Graph {
 
     pub fn create_image(&self, name: &str) -> Result<(), std::io::Error> {
         use layout::{
+            adt::dag::NodeHandle,
             backends::svg::SVGWriter,
-            core::{base::Orientation, geometry::Point, style::StyleAttr, utils::save_to_file},
-            std_shapes::shapes::{Arrow, Element, ShapeKind},
+            core::{base::Orientation, utils::save_to_file},
             topo::layout::VisualGraph,
         };
 
         let mut vg = VisualGraph::new(Orientation::TopToBottom);
 
-        let node_shape = ShapeKind::new_box("text here");
-        let look = StyleAttr::simple();
+        let mut id_handle_map: HashMap<NodeID, NodeHandle> = HashMap::new();
 
-        let sz = Point::new(100.0, 100.0);
+        for (node_id, (node, _)) in self.nodes.iter() {
+            let handle = vg.add_node(node.create_display_node());
 
-        let node = Element::create(node_shape, look, Orientation::TopToBottom, sz);
-        let arrow = Arrow::simple("arrow?!");
+            id_handle_map.insert(*node_id, handle);
+        }
 
-        let h0 = vg.add_node(node.clone());
-        let h1 = vg.add_node(node);
-
-        vg.add_edge(arrow, h0, h1);
+        //TODO: add edges to graph
 
         let mut svg = SVGWriter::new();
 
