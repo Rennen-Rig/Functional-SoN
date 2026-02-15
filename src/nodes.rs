@@ -373,6 +373,9 @@ impl Graph {
 
         vg.do_it(false, false, false, &mut svg);
 
-        save_to_file(format!("tmp/{}.svg", name).as_str(), &svg.finalize())
+        save_to_file(
+            format!("generated_graphs/{}.svg", name).as_str(),
+            &svg.finalize(),
+        )
     }
 }
