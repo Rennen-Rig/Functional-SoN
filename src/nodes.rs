@@ -7,9 +7,6 @@ use std::{
 /// `NodeID` will cause a panic.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct NodeID(u32);
-impl NodeID {
-    pub const START_NODE_ID: NodeID = NodeID(0);
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PassedData {
@@ -51,14 +48,10 @@ impl Display for PassedData {
 /// their input types.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Node {
-    /// The root for the graph and the only node with no parents.
-    /// Used as a parent for `Constant` so it has an ancestor for
-    /// graph traversal.
-    Start,
-
     /// End of the program.
     /// TODO: make this use something like Haskell's IO monad to
     /// allow reading + writing data.
+    /// Also make sure all programs have this
     End { input: NodeID },
 
     /// Remains constant after compilation.
@@ -127,9 +120,8 @@ impl Node {
     pub fn get_inputs(&self) -> Vec<NodeID> {
         use Node::*;
         match self {
-            Start => vec![],
             End { input } => vec![input.clone()],
-            Constant { value: _ } => vec![NodeID::START_NODE_ID],
+            Constant { value: _ } => vec![],
 
             FunctionDeclaration { input, body } => vec![input.clone(), body.clone()],
             FunctionInput { function } => vec![function.clone()],
@@ -159,12 +151,6 @@ impl Node {
         const ORIENTATION: Orientation = Orientation::TopToBottom;
 
         match self {
-            Start => Element::create(
-                ShapeKind::new_double_circle("START"),
-                StyleAttr::simple(),
-                ORIENTATION,
-                Point::new(50.0, 50.0),
-            ),
             End { input: _ } => Element::create(
                 ShapeKind::new_double_circle("END"),
                 StyleAttr::simple(),
@@ -246,9 +232,8 @@ impl Node {
         let unlabelled = "".to_string();
 
         match self {
-            Start => vec![],
             End { input } => vec![(input.clone(), unlabelled)],
-            Constant { value: _ } => vec![(NodeID::START_NODE_ID, unlabelled)],
+            Constant { value: _ } => vec![],
 
             FunctionDeclaration { input, body } => {
                 vec![
@@ -343,29 +328,27 @@ pub struct Graph {
     /// Stores all updated nodes that still need to be peepholed.
     workgroup: Workgroup,
     /// The previously used id, used so no ids are repeated.
-    last_id: u32,
+    next_id: u32,
 }
 
 impl Graph {
     /// Returns an empty graph.
     pub fn new() -> Self {
-        let mut nodes = HashMap::new();
-        nodes.insert(NodeID::START_NODE_ID, (Node::Start, vec![]));
-
-        let mut keys = HashMap::new();
-        keys.insert(Node::Start, NodeID::START_NODE_ID);
+        let nodes = HashMap::new();
+        let keys = HashMap::new();
 
         Self {
             nodes: nodes,
             keys: keys,
             workgroup: Workgroup::new(),
-            last_id: NodeID::START_NODE_ID.0,
+            next_id: 0,
         }
     }
 
     pub fn reserve_id(&mut self) -> NodeID {
-        self.last_id += 1;
-        NodeID(self.last_id)
+        let this_id = self.next_id;
+        self.next_id += 1;
+        NodeID(this_id)
     }
 
     fn add_output_to_node(&mut self, used_node: NodeID, input_to_node: NodeID) {
