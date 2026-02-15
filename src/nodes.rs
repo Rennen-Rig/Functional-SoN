@@ -1,7 +1,10 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
+    hash::{BuildHasher, DefaultHasher, Hash, Hasher, RandomState},
 };
+
+use layout::topo::optimizer::RankOptimizer;
 
 /// Used to identify nodes. Creating two nodes with the same
 /// `NodeID` will cause a panic.
@@ -367,6 +370,7 @@ impl Graph {
             prev_key.clone()
         } else {
             let id = self.reserve_id();
+            self.keys.insert(node.clone(), id);
 
             for input_node_id in node.get_inputs() {
                 self.add_output_to_node(input_node_id, id);
