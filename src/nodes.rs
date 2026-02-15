@@ -24,9 +24,9 @@ impl Display for PassedData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PassedData::Bool(boolean) => write!(f, "{}", boolean),
-            PassedData::Float(ordered_float) => write!(f, "{}", ordered_float),
-            PassedData::Int(int) => write!(f, "{} (int)", int),
-            PassedData::UInt(uint) => write!(f, "{} (uint)", uint),
+            PassedData::Float(ordered_float) => write!(f, "{}", ordered_float.0),
+            PassedData::Int(int) => write!(f, "{}", int),
+            PassedData::UInt(uint) => write!(f, "{}u", uint),
             PassedData::Tuple(tuple) => {
                 let mut text = "(".to_string();
 
@@ -114,7 +114,7 @@ pub enum Node {
     ///     evaluate(on_false)
     /// }
     /// ```
-    IfElse {
+    IfThenElse {
         /// The boolean to switch on
         condition: NodeID,
         on_true: NodeID,
@@ -141,7 +141,7 @@ impl Node {
             Equality { left, right } | Add { left, right } | Multiply { left, right } => {
                 vec![left.clone(), right.clone()]
             }
-            IfElse {
+            IfThenElse {
                 condition,
                 on_true,
                 on_false,
@@ -178,7 +178,7 @@ impl Node {
                 Point::new(50.0, 50.0),
             ),
             FunctionDeclaration { input: _, body: _ } => Element::create(
-                ShapeKind::new_box("function definition"),
+                ShapeKind::new_box("function"),
                 StyleAttr::simple(),
                 ORIENTATION,
                 Point::new(50.0, 50.0),
@@ -199,13 +199,13 @@ impl Node {
                 Point::new(50.0, 50.0),
             ),
             ConstructTuple { data: _ } => Element::create(
-                ShapeKind::new_circle("Tuple"),
+                ShapeKind::new_circle("tuple"),
                 StyleAttr::simple(),
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             GetTupleElement { from: _, at_index } => Element::create(
-                ShapeKind::new_circle(format!("Get element from index {}", at_index).as_str()),
+                ShapeKind::new_circle(format!(".{}", at_index).as_str()),
                 StyleAttr::simple(),
                 ORIENTATION,
                 Point::new(50.0, 50.0),
@@ -228,16 +228,62 @@ impl Node {
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
-            IfElse {
+            IfThenElse {
                 condition: _,
                 on_true: _,
                 on_false: _,
             } => Element::create(
-                ShapeKind::new_box("if"),
+                ShapeKind::new_box("switch"),
                 StyleAttr::simple(),
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
+        }
+    }
+
+    pub fn get_labelled_inputs(&self) -> Vec<(NodeID, String)> {
+        use Node::*;
+        let unlabelled = "".to_string();
+
+        match self {
+            Start => vec![],
+            End { input } => vec![(input.clone(), unlabelled)],
+            Constant { value: _ } => vec![(NodeID::START_NODE_ID, unlabelled)],
+
+            FunctionDeclaration { input, body } => {
+                vec![
+                    (input.clone(), "body".to_string()),
+                    (body.clone(), "input".to_string()),
+                ]
+            }
+            FunctionInput { function } => vec![(function.clone(), unlabelled)],
+            FunctionApplication { function, input } => vec![
+                (function.clone(), "apply".to_string()),
+                (input.clone(), "to data".to_string()),
+            ],
+
+            ConstructTuple { data } => data
+                .iter()
+                .enumerate()
+                .map(|(index, node_id)| (node_id.clone(), index.to_string()))
+                .collect(),
+            GetTupleElement { from, at_index } => vec![(from.clone(), at_index.to_string())],
+
+            Equality { left, right } | Add { left, right } | Multiply { left, right } => {
+                vec![
+                    (left.clone(), unlabelled.clone()),
+                    (right.clone(), unlabelled),
+                ]
+            }
+            IfThenElse {
+                condition,
+                on_true,
+                on_false,
+            } => vec![
+                (condition.clone(), "if".to_string()),
+                (on_true.clone(), "then".to_string()),
+                (on_false.clone(), "else".to_string()),
+            ],
         }
     }
 }
@@ -354,6 +400,7 @@ impl Graph {
             adt::dag::NodeHandle,
             backends::svg::SVGWriter,
             core::{base::Orientation, utils::save_to_file},
+            std_shapes::shapes::Arrow,
             topo::layout::VisualGraph,
         };
 
@@ -367,7 +414,19 @@ impl Graph {
             id_handle_map.insert(*node_id, handle);
         }
 
-        //TODO: add edges to graph
+        for (child_node_id, (child_node, _)) in self.nodes.iter() {
+            let child_node_handle = id_handle_map.get(&child_node_id).unwrap();
+
+            for (parent_node_id, label) in child_node.get_labelled_inputs() {
+                let parent_node_handle = id_handle_map.get(&parent_node_id).unwrap();
+
+                vg.add_edge(
+                    Arrow::simple(label.as_str()),
+                    *parent_node_handle,
+                    *child_node_handle,
+                );
+            }
+        }
 
         let mut svg = SVGWriter::new();
 
