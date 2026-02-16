@@ -52,7 +52,7 @@ fn main() {
 
         let switch = g.insert_node(Node::IfThenElse {
             condition: comparison,
-            on_true: one,
+            on_true: acc,
             on_false: next_call,
         });
 
