@@ -129,4 +129,34 @@ fn main() {
         let fact_non_tail = g.finalise(call);
         fact_non_tail.create_image("example2").unwrap();
     }
+
+    // Ideal
+    // ```rs
+    // {
+    //     let g = GraphBuilder::new();
+    //
+    //     let one: NodeID<i32> = g.add_node(node::constant(1));
+    //     let zero: NodeID<i32> = g.add_node(node::constant(0));
+    //     let minus_one: NodeID<i32> = g.add_node(node::constant(-1));
+    //
+    //     let double_one: NodeID<i32> = g.add_node(node::add(one, one));
+    //
+    //     let factorial: NodeID<Function<i32, i32>> = g.function(
+    //         |factorial: NodeID<Function<i32, i32>>, n: NodeID<i32>| {
+    //             let is_zero: NodeID<bool> = g.add_node(node::equals(input, zero));
+    //
+    //             let n_pred: NodeID<i32> = g.add_node(node::add(n, minus_one));
+    //             let n_pred_fact: NodeID<i32> = g.add_node(node::call(factorial, n_pred));
+    //             let product = g.add_node(node::mul(
+    //                 n, n_pred_fact
+    //             ));
+    //
+    //             node::switch(is_zero, one, product);
+    //         }
+    //     )
+    //
+    //     let seven: NodeID<i32> = g.add_node(node::constant(7));
+    //     lete graph = g.end(node::call(factorial, seven));
+    // }
+    // ```
 }

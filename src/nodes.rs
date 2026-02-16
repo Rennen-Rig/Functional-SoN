@@ -2,17 +2,18 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
     hash::{BuildHasher, DefaultHasher, Hash, Hasher, RandomState},
+    marker::PhantomData,
 };
 
 /// Used to identify nodes. Creating two nodes with the same
-/// `NodeID` will cause a panic.
+/// `InternalNodeID` will cause a panic.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub struct NodeID(u32);
+pub struct InternalNodeID(u32);
 
-impl NodeID {
+impl InternalNodeID {
     const END: Self = Self(0);
 
-    fn replace(&self, replace: NodeID, with: NodeID) -> Self {
+    fn replace(&self, replace: InternalNodeID, with: InternalNodeID) -> Self {
         if *self == replace { with } else { self.clone() }
     }
 }
@@ -61,7 +62,7 @@ pub enum Node {
     /// TODO: make this use something like Haskell's IO monad to
     /// allow reading + writing data.
     /// Also make sure all programs have this
-    End { input: NodeID },
+    End { input: InternalNodeID },
 
     /// Remains constant after compilation.
     Constant { value: PassedData },
@@ -70,17 +71,17 @@ pub enum Node {
     FunctionDeclaration {
         /// Links to the node that will be used inside `body` as a placeholder
         /// for the input data
-        input: NodeID,
+        input: InternalNodeID,
         /// Computes the result of calling the function, in terms of `input`.
         /// If `input` is not used, then the function is a constant function, which
         /// is only usually useful if the function itself is being passed around.
-        body: NodeID,
+        body: InternalNodeID,
     },
 
     /// To be used in the body of `FunctionDeclaration`
     FunctionInput {
         /// The associated function this input is for.
-        function: NodeID,
+        function: InternalNodeID,
     },
 
     /// Represents calling a function.
@@ -88,25 +89,37 @@ pub enum Node {
         /// The function to call, (in future) this may be not be a direct
         /// `FunctionDeclaration` node, but a set of operations that still returns
         /// a function type.
-        function: NodeID,
+        function: InternalNodeID,
         /// The data to operate on. If multiple arguments are desired, use a tuple.
-        input: NodeID,
+        input: InternalNodeID,
     },
 
     /// Creates a tuple of `data.len()` elements.
-    ConstructTuple { data: Vec<NodeID> },
+    ConstructTuple { data: Vec<InternalNodeID> },
 
     /// Extracts the itme at `at_index` from the input tuple.
-    GetTupleElement { from: NodeID, at_index: usize },
+    GetTupleElement {
+        from: InternalNodeID,
+        at_index: usize,
+    },
 
     /// Same as `==`.
-    Equality { left: NodeID, right: NodeID },
+    Equality {
+        left: InternalNodeID,
+        right: InternalNodeID,
+    },
 
     /// Same as `+`
-    Add { left: NodeID, right: NodeID },
+    Add {
+        left: InternalNodeID,
+        right: InternalNodeID,
+    },
 
     /// Same as `*`
-    Multiply { left: NodeID, right: NodeID },
+    Multiply {
+        left: InternalNodeID,
+        right: InternalNodeID,
+    },
 
     /// Same as
     /// ```rust
@@ -118,15 +131,15 @@ pub enum Node {
     /// ```
     IfThenElse {
         /// The boolean to switch on
-        condition: NodeID,
-        on_true: NodeID,
-        on_false: NodeID,
+        condition: InternalNodeID,
+        on_true: InternalNodeID,
+        on_false: InternalNodeID,
     },
 }
 
 impl Node {
-    /// Returns the `NodeID`s of all nodes used in this node.
-    pub fn get_inputs(&self) -> Vec<NodeID> {
+    /// Returns the `InternalNodeID`s of all nodes used in this node.
+    pub fn get_inputs(&self) -> Vec<InternalNodeID> {
         use Node::*;
         match self {
             End { input } => vec![input.clone()],
@@ -267,7 +280,7 @@ impl Node {
         }
     }
 
-    pub fn get_labelled_inputs(&self) -> Vec<(NodeID, String)> {
+    pub fn get_labelled_inputs(&self) -> Vec<(InternalNodeID, String)> {
         use Node::*;
         let unlabelled = "".to_string();
 
@@ -313,7 +326,7 @@ impl Node {
     }
 
     //TODO: swap this for a map node_id, or remove it
-    pub fn replace_uses(&self, replace: NodeID, with: NodeID) -> Self {
+    pub fn replace_uses(&self, replace: InternalNodeID, with: InternalNodeID) -> Self {
         use Node::*;
 
         match self {
@@ -372,8 +385,8 @@ impl Node {
 /// then it won't be added to the workgroup.
 #[derive(Debug)]
 struct Workgroup {
-    data: Vec<NodeID>,
-    tracker: HashSet<NodeID>,
+    data: Vec<InternalNodeID>,
+    tracker: HashSet<InternalNodeID>,
 }
 
 impl Workgroup {
@@ -384,14 +397,14 @@ impl Workgroup {
         }
     }
 
-    pub fn push(&mut self, node_id: NodeID) {
+    pub fn push(&mut self, node_id: InternalNodeID) {
         if !self.tracker.contains(&node_id) {
             self.data.push(node_id);
             self.tracker.insert(node_id);
         }
     }
 
-    pub fn pop(&mut self) -> Option<NodeID> {
+    pub fn pop(&mut self) -> Option<InternalNodeID> {
         let id = self.data.pop()?;
         assert!(
             self.tracker.remove(&id),
@@ -416,9 +429,9 @@ impl Workgroup {
 #[derive(Debug)]
 pub struct Graph {
     /// Stores all the nodes and their outputs in the graph.
-    nodes: HashMap<NodeID, (Node, Vec<NodeID>)>,
+    nodes: HashMap<InternalNodeID, (Node, Vec<InternalNodeID>)>,
     /// Used to prevent two identical `Node`s with different ids from existing.
-    keys: HashMap<Node, NodeID>,
+    keys: HashMap<Node, InternalNodeID>,
     /// Stores all updated nodes that still need to be peepholed.
     workgroup: Workgroup,
     /// The previously used id, used so no ids are repeated.
@@ -439,13 +452,13 @@ impl Graph {
         }
     }
 
-    pub fn reserve_id(&mut self) -> NodeID {
+    pub fn reserve_id(&mut self) -> InternalNodeID {
         let this_id = self.next_id;
         self.next_id += 1;
-        NodeID(this_id)
+        InternalNodeID(this_id)
     }
 
-    fn add_output_to_node(&mut self, used_node: NodeID, input_to_node: NodeID) {
+    fn add_output_to_node(&mut self, used_node: InternalNodeID, input_to_node: InternalNodeID) {
         if let Some((_node, user_nodes)) = self.nodes.get_mut(&used_node) {
             user_nodes.push(input_to_node);
         } else {
@@ -456,7 +469,7 @@ impl Graph {
         }
     }
 
-    pub fn insert_node(&mut self, node: Node) -> NodeID {
+    pub fn insert_node(&mut self, node: Node) -> InternalNodeID {
         if let Some(prev_key) = self.keys.get(&node) {
             prev_key.clone()
         } else {
@@ -484,7 +497,7 @@ impl Graph {
 
         let mut vg = VisualGraph::new(Orientation::TopToBottom);
 
-        let mut id_handle_map: HashMap<NodeID, NodeHandle> = HashMap::new();
+        let mut id_handle_map: HashMap<InternalNodeID, NodeHandle> = HashMap::new();
 
         for (node_id, (node, _)) in self.nodes.iter() {
             let handle = vg.add_node(node.create_display_node());
@@ -519,22 +532,38 @@ impl Graph {
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct FunctionID {
-    declaration_id: NodeID,
-    input_id: NodeID,
+    declaration_id: InternalNodeID,
+    input_id: InternalNodeID,
 }
 
 impl FunctionID {
-    pub fn use_input(&self) -> NodeID {
+    pub fn use_input(&self) -> InternalNodeID {
         self.input_id
     }
-    pub fn use_function(&self) -> NodeID {
+    pub fn use_function(&self) -> InternalNodeID {
         self.declaration_id
     }
 }
 
+/// Type checked wrapper for `InternalNodeID` during graph creation
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct NodeID<T> {
+    node_id: InternalNodeID,
+    phantom_data: PhantomData<T>,
+}
+
+pub mod construct_node {
+    use crate::nodes::{Node, NodeID};
+
+    pub fn add<T>(left: NodeID<T>) -> Node {
+        //Node::Add { left: (), right: () }
+        todo!()
+    }
+}
+
 pub struct GraphBuilder {
-    nodes: HashMap<NodeID, Node>,
-    recognised_nodes: HashMap<Node, NodeID>,
+    nodes: HashMap<InternalNodeID, Node>,
+    recognised_nodes: HashMap<Node, InternalNodeID>,
     next_id: u32,
     functions_to_be_added: HashSet<FunctionID>,
 }
@@ -549,10 +578,10 @@ impl GraphBuilder {
         }
     }
 
-    fn reserve_id(&mut self) -> NodeID {
+    fn reserve_id(&mut self) -> InternalNodeID {
         let id = self.next_id;
         self.next_id += 1;
-        NodeID(id)
+        InternalNodeID(id)
     }
 
     pub fn start_function(&mut self) -> FunctionID {
@@ -570,7 +599,7 @@ impl GraphBuilder {
         }
     }
 
-    pub fn insert_node(&mut self, node: Node) -> NodeID {
+    pub fn insert_node(&mut self, node: Node) -> InternalNodeID {
         if let Some(id) = self.recognised_nodes.get(&node) {
             *id
         } else {
@@ -580,7 +609,7 @@ impl GraphBuilder {
         }
     }
 
-    pub fn end_function(&mut self, function: FunctionID, body: NodeID) -> NodeID {
+    pub fn end_function(&mut self, function: FunctionID, body: InternalNodeID) -> InternalNodeID {
         assert!(
             self.functions_to_be_added.remove(&function),
             "Tried defining the same function twice"
@@ -605,13 +634,13 @@ impl GraphBuilder {
         function.declaration_id
     }
 
-    pub fn finalise(mut self, return_node: NodeID) -> Graph {
+    pub fn finalise(mut self, return_node: InternalNodeID) -> Graph {
         assert!(self.functions_to_be_added.is_empty());
 
         self.nodes
-            .insert(NodeID::END, Node::End { input: return_node });
+            .insert(InternalNodeID::END, Node::End { input: return_node });
 
-        let mut use_tracked_nodes: HashMap<NodeID, (Node, Vec<NodeID>)> = self
+        let mut use_tracked_nodes: HashMap<InternalNodeID, (Node, Vec<InternalNodeID>)> = self
             .nodes
             .iter()
             .map(|(node_id, node)| (*node_id, (node.clone(), vec![])))
