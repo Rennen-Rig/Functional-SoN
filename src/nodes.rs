@@ -193,7 +193,7 @@ impl Node {
         match self {
             End { input: _ } => Element::create(
                 ShapeKind::new_double_circle("END"),
-                StyleAttr::simple(),
+                pink_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
@@ -205,7 +205,7 @@ impl Node {
             ),
             FunctionDeclaration { input: _, body: _ } => Element::create(
                 ShapeKind::new_box("function"),
-                yellow_style,
+                pink_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
