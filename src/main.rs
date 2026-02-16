@@ -127,6 +127,6 @@ fn main() {
             input,
         });
         let fact_non_tail = g.finalise(call);
-        fact_non_tail.create_image("example_2").unwrap();
+        fact_non_tail.create_image("example2").unwrap();
     }
 }
