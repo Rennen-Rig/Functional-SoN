@@ -17,7 +17,11 @@ the HotSpot JVM compiler, but the general concepts sitll apply here.
 ## The IR
 An example program represented as a graph may be seen below
 
-![example program as graph](/generated_graphs/example.svg)
+![tail recursive factorial functiom graph](/generated_graphs/example.svg)
+This graph represents the factorial function, using a tail-recursive approach.
+
+The graph below does the same, but is not tail-recursive.
+![non tail recursive factorial function graph](/generated_graphs/example2.svg)
 
 
 ### Motivation

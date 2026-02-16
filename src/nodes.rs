@@ -4,12 +4,18 @@ use std::{
     hash::{BuildHasher, DefaultHasher, Hash, Hasher, RandomState},
 };
 
-use layout::topo::optimizer::RankOptimizer;
-
 /// Used to identify nodes. Creating two nodes with the same
 /// `NodeID` will cause a panic.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct NodeID(u32);
+
+impl NodeID {
+    const END: Self = Self(0);
+
+    fn replace(&self, replace: NodeID, with: NodeID) -> Self {
+        if *self == replace { with } else { self.clone() }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PassedData {
@@ -147,11 +153,42 @@ impl Node {
     pub fn create_display_node(&self) -> layout::std_shapes::shapes::Element {
         use Node::*;
         use layout::{
-            core::{base::Orientation, geometry::Point, style::StyleAttr},
+            core::{base::Orientation, color::Color, geometry::Point, style::StyleAttr},
             std_shapes::shapes::{Element, ShapeKind},
         };
 
         const ORIENTATION: Orientation = Orientation::TopToBottom;
+
+        let blue_style = StyleAttr {
+            line_color: Color::new(0x00b0beff),
+            line_width: 2,
+            fill_color: Some(Color::new(0x8fd7d7ff)),
+            rounded: 0,
+            font_size: 15,
+        };
+
+        let pink_style = StyleAttr {
+            line_color: Color::new(0xf45f74ff),
+            line_width: 2,
+            fill_color: Some(Color::new(0xff8ca1ff)),
+            rounded: 0,
+            font_size: 15,
+        };
+        let green_style = StyleAttr {
+            line_color: Color::new(0x98c127ff),
+            line_width: 2,
+            fill_color: Some(Color::new(0xbdd373ff)),
+            rounded: 0,
+            font_size: 15,
+        };
+
+        let yellow_style = StyleAttr {
+            line_color: Color::new(0xffb255ff),
+            line_width: 2,
+            fill_color: Some(Color::new(0xffcd8eff)),
+            rounded: 0,
+            font_size: 15,
+        };
 
         match self {
             End { input: _ } => Element::create(
@@ -162,19 +199,19 @@ impl Node {
             ),
             Constant { value } => Element::create(
                 ShapeKind::new_box(value.to_string().as_str()),
-                StyleAttr::simple(),
+                yellow_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             FunctionDeclaration { input: _, body: _ } => Element::create(
                 ShapeKind::new_box("function"),
-                StyleAttr::simple(),
+                yellow_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             FunctionInput { function: _ } => Element::create(
                 ShapeKind::new_box("input"),
-                StyleAttr::simple(),
+                pink_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
@@ -183,37 +220,37 @@ impl Node {
                 input: _,
             } => Element::create(
                 ShapeKind::new_circle("|>"),
-                StyleAttr::simple(),
+                green_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             ConstructTuple { data: _ } => Element::create(
                 ShapeKind::new_circle("tuple"),
-                StyleAttr::simple(),
+                blue_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             GetTupleElement { from: _, at_index } => Element::create(
                 ShapeKind::new_circle(format!(".{}", at_index).as_str()),
-                StyleAttr::simple(),
+                blue_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             Equality { left: _, right: _ } => Element::create(
                 ShapeKind::new_circle("=="),
-                StyleAttr::simple(),
+                blue_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             Add { left: _, right: _ } => Element::create(
                 ShapeKind::new_circle("+"),
-                StyleAttr::simple(),
+                blue_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
             Multiply { left: _, right: _ } => Element::create(
                 ShapeKind::new_circle("*"),
-                StyleAttr::simple(),
+                blue_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
@@ -223,7 +260,7 @@ impl Node {
                 on_false: _,
             } => Element::create(
                 ShapeKind::new_box("switch"),
-                StyleAttr::simple(),
+                pink_style,
                 ORIENTATION,
                 Point::new(50.0, 50.0),
             ),
@@ -272,6 +309,60 @@ impl Node {
                 (on_true.clone(), "then".to_string()),
                 (on_false.clone(), "else".to_string()),
             ],
+        }
+    }
+
+    //TODO: swap this for a map node_id, or remove it
+    pub fn replace_uses(&self, replace: NodeID, with: NodeID) -> Self {
+        use Node::*;
+
+        match self {
+            End { input } => End {
+                input: input.replace(replace, with),
+            },
+            Constant { value: _ } => self.clone(),
+            FunctionDeclaration { input, body } => FunctionDeclaration {
+                input: input.replace(replace, with),
+                body: body.replace(replace, with),
+            },
+            FunctionInput { function } => FunctionInput {
+                function: function.replace(replace, with),
+            },
+            FunctionApplication { function, input } => FunctionApplication {
+                function: function.replace(replace, with),
+                input: input.replace(replace, with),
+            },
+            ConstructTuple { data } => ConstructTuple {
+                data: data
+                    .iter()
+                    .map(|element| element.replace(replace, with))
+                    .collect(),
+            },
+            GetTupleElement { from, at_index } => GetTupleElement {
+                from: from.replace(replace, with),
+                at_index: at_index.clone(),
+            },
+            Equality { left, right } => Equality {
+                left: left.replace(replace, with),
+                right: right.replace(replace, with),
+            },
+            Add { left, right } => Add {
+                left: left.replace(replace, with),
+                right: right.replace(replace, with),
+            },
+            Multiply { left, right } => Multiply {
+                left: left.replace(replace, with),
+                right: right.replace(replace, with),
+            },
+            IfThenElse {
+                condition,
+                on_true,
+                on_false,
+            } => IfThenElse {
+                condition: condition.replace(replace, with),
+                on_true: on_true.replace(replace, with),
+                on_false: on_false.replace(replace, with),
+            },
         }
     }
 }
@@ -423,5 +514,124 @@ impl Graph {
             format!("generated_graphs/{}.svg", name).as_str(),
             &svg.finalize(),
         )
+    }
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub struct FunctionID {
+    declaration_id: NodeID,
+    input_id: NodeID,
+}
+
+impl FunctionID {
+    pub fn use_input(&self) -> NodeID {
+        self.input_id
+    }
+    pub fn use_function(&self) -> NodeID {
+        self.declaration_id
+    }
+}
+
+pub struct GraphBuilder {
+    nodes: HashMap<NodeID, Node>,
+    recognised_nodes: HashMap<Node, NodeID>,
+    next_id: u32,
+    functions_to_be_added: HashSet<FunctionID>,
+}
+
+impl GraphBuilder {
+    pub fn new() -> Self {
+        Self {
+            nodes: HashMap::new(),
+            recognised_nodes: HashMap::new(),
+            next_id: 1,
+            functions_to_be_added: HashSet::new(),
+        }
+    }
+
+    fn reserve_id(&mut self) -> NodeID {
+        let id = self.next_id;
+        self.next_id += 1;
+        NodeID(id)
+    }
+
+    pub fn start_function(&mut self) -> FunctionID {
+        let declaration_id = self.reserve_id();
+        let input_id = self.reserve_id();
+
+        self.functions_to_be_added.insert(FunctionID {
+            declaration_id,
+            input_id,
+        });
+
+        FunctionID {
+            declaration_id,
+            input_id,
+        }
+    }
+
+    pub fn insert_node(&mut self, node: Node) -> NodeID {
+        if let Some(id) = self.recognised_nodes.get(&node) {
+            *id
+        } else {
+            let node_id = self.reserve_id();
+            self.nodes.insert(node_id, node);
+            node_id
+        }
+    }
+
+    pub fn end_function(&mut self, function: FunctionID, body: NodeID) -> NodeID {
+        assert!(
+            self.functions_to_be_added.remove(&function),
+            "Tried defining the same function twice"
+        );
+
+        self.functions_to_be_added.remove(&function);
+
+        self.nodes.insert(
+            function.input_id,
+            Node::FunctionInput {
+                function: function.declaration_id,
+            },
+        );
+        self.nodes.insert(
+            function.declaration_id,
+            Node::FunctionDeclaration {
+                input: function.input_id,
+                body,
+            },
+        );
+
+        function.declaration_id
+    }
+
+    pub fn finalise(mut self, return_node: NodeID) -> Graph {
+        assert!(self.functions_to_be_added.is_empty());
+
+        self.nodes
+            .insert(NodeID::END, Node::End { input: return_node });
+
+        let mut use_tracked_nodes: HashMap<NodeID, (Node, Vec<NodeID>)> = self
+            .nodes
+            .iter()
+            .map(|(node_id, node)| (*node_id, (node.clone(), vec![])))
+            .collect();
+
+        for (node_id, node) in self.nodes {
+            for input_node_id in node.get_inputs() {
+                use_tracked_nodes
+                    .get_mut(&input_node_id)
+                    .unwrap()
+                    .1
+                    .push(node_id);
+            }
+        }
+
+        Graph {
+            nodes: use_tracked_nodes,
+            keys: self.recognised_nodes,
+            workgroup: Workgroup::new(),
+            next_id: self.next_id,
+        }
     }
 }
