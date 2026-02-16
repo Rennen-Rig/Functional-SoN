@@ -277,14 +277,14 @@ impl Node {
 
             FunctionDeclaration { input, body } => {
                 vec![
-                    (input.clone(), "body".to_string()),
-                    (body.clone(), "input".to_string()),
+                    (input.clone(), "input".to_string()),
+                    (body.clone(), "body".to_string()),
                 ]
             }
             FunctionInput { function } => vec![(function.clone(), unlabelled)],
             FunctionApplication { function, input } => vec![
                 (function.clone(), "apply".to_string()),
-                (input.clone(), "to data".to_string()),
+                (input.clone(), "to".to_string()),
             ],
 
             ConstructTuple { data } => data
