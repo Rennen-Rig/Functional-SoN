@@ -1,7 +1,10 @@
-use crate::nodes::{GraphBuilder, Node, PassedData};
+//use crate::nodes::{GraphBuilder, Node, PassedData};
 
-pub mod nodes;
+pub mod graph;
+pub mod node;
+//pub mod nodes;
 
+/*
 fn main() {
     // tail recursive factorial
     {
@@ -159,4 +162,10 @@ fn main() {
     //     lete graph = g.end(node::call(factorial, seven));
     // }
     // ```
+}
+
+*/
+
+pub fn main() {
+    todo!()
 }
