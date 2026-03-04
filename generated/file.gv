@@ -1,0 +1,39 @@
+digraph {
+	0	[color="#44aa55",
+		label="+",
+		shape=circle];
+	6	[color="#ffaa11",
+		label=">",
+		shape=Msquare];
+	0 -> 6	[label=left];
+	1	[color="#9212b4",
+		label=15,
+		shape=box];
+	8	[color="#44aa55",
+		label="+",
+		shape=circle];
+	1 -> 8;
+	2	[color="#44aa55",
+		label="+",
+		shape=circle];
+	2 -> 0;
+	3	[color="#9212b4",
+		label=149,
+		shape=box];
+	3 -> 2;
+	5	[color="#44aa55",
+		label="+",
+		shape=circle];
+	3 -> 5;
+	4	[color="#9212b4",
+		label=414,
+		shape=box];
+	4 -> 8;
+	5 -> 6	[label=right];
+	7	[color="#9212b4",
+		label=3,
+		shape=box];
+	7 -> 5;
+	8 -> 0;
+	8 -> 2;
+}

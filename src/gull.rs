@@ -30,27 +30,22 @@ impl ComputationNode for Node {
 impl RenderNode for Node {
     fn get_setup() {}
 
-    fn make_edge_attributes(from: &Self, _to: &Self) -> String {
-        match from {
-            Node::Constant(_) | Node::Add(_, _) => "".to_string(),
-            Node::GreaterThan(_node_id, _node_id1) => "".to_string(),
-        }
-    }
-
-    fn make_node_attributes(node: &Self) -> String {
-        match node {
-            Node::Constant(v) => format!(
-                r##"
+    fn make_node_attributes(&self) -> String {
+        match self {
+            Node::Constant(v) => {
+                format!(
+                    r##"                       
                     "label" = "{v}",
                     "shape" = "box",
                     "color" = "#9212b4"
-                "##,
-            ),
+                "##
+                )
+            }
             Node::Add(_, _) => r##"
                 "label" = "+",
                 "shape" = "circle",
                 "color" = "#44aa55"
-            "##
+             "##
             .to_string(),
             Node::GreaterThan(_, _) => r##"
                 "label" = ">",
@@ -58,6 +53,22 @@ impl RenderNode for Node {
                 "color" = "#ffaa11"
             "##
             .to_string(),
+        }
+    }
+
+    fn edges_and_attributes(&self) -> Vec<(NodeID, String)> {
+        match self {
+            Node::GreaterThan(left, right) => {
+                vec![
+                    (*left, r#""label" = "left""#.to_string()),
+                    (*right, r#""label" = "right" "#.to_string()),
+                ]
+            }
+            _ => self
+                .get_inputs()
+                .iter()
+                .map(|n| (*n, "".to_string()))
+                .collect(),
         }
     }
 }

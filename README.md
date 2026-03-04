@@ -5,6 +5,14 @@ A Sea-of-Nodes intermediate representation for a pure functional language.
 See the [Simple](https://github.com/SeaOfNodes) repo for an explanation on what
 Sea of Nodes is.
 
+Currently you can graphs like
+```bash
+cargo run | ./mage -o "temp/example"
+```
+this will generate the graph, and save the image + DOT format to
+`/generated/temp/example.svg` and `/generated/temp/example.gv`
+respectively.
+
 
 ### Other useful SoN references:
 - A more introductory [talk](https://youtu.be/NxiKlnUtyio) on SoN.

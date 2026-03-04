@@ -17,14 +17,17 @@ pub trait ComputationNode: Clone {
     fn get_inputs(&self) -> Vec<NodeID>;
 }
 
-pub trait RenderNode {
+pub trait RenderNode: ComputationNode {
     fn get_setup();
 
-    fn make_edge_attributes(_from: &Self, _to: &Self) -> String {
-        "".to_string()
+    fn edges_and_attributes(&self) -> Vec<(NodeID, String)> {
+        self.get_inputs()
+            .iter()
+            .map(|id| (*id, "".to_string()))
+            .collect()
     }
 
-    fn make_node_attributes(_node: &Self) -> String {
+    fn make_node_attributes(&self) -> String {
         "".to_string()
     }
 }
