@@ -1,234 +1,29 @@
 //use crate::nodes::{GraphBuilder, Node, PassedData};
 
-use core::hash;
-use std::{fmt::Display, process::Command, sync::Arc};
-
-use crate::{
-    graph::Graph,
-    node::{ComputationNode, NodeID, RenderNode},
-};
-
 pub mod graph;
+mod gull;
 pub mod node;
-//pub mod nodes;
-
-/*
-fn main() {
-    // tail recursive factorial
-    {
-        let mut g = GraphBuilder::new();
-
-        let minus_1 = g.insert_node(Node::Constant {
-            value: PassedData::Int(-1),
-        });
-        let zero = g.insert_node(Node::Constant {
-            value: PassedData::Int(0),
-        });
-        let one = g.insert_node(Node::Constant {
-            value: PassedData::Int(1),
-        });
-
-        let fact_recursive = g.start_function();
-
-        let n = g.insert_node(Node::GetTupleElement {
-            from: fact_recursive.use_input(),
-            at_index: 0,
-        });
-        let acc = g.insert_node(Node::GetTupleElement {
-            from: fact_recursive.use_input(),
-            at_index: 1,
-        });
-
-        let product = g.insert_node(Node::Multiply {
-            left: n,
-            right: acc,
-        });
-        let n_pred = g.insert_node(Node::Add {
-            left: n,
-            right: minus_1,
-        });
-
-        let next_call_input = g.insert_node(Node::ConstructTuple {
-            data: vec![n_pred, product],
-        });
-        let next_call = g.insert_node(Node::FunctionApplication {
-            function: fact_recursive.use_function(),
-            input: next_call_input,
-        });
-
-        let comparison = g.insert_node(Node::Equality {
-            left: n,
-            right: zero,
-        });
-
-        let switch = g.insert_node(Node::IfThenElse {
-            condition: comparison,
-            on_true: acc,
-            on_false: next_call,
-        });
-
-        let fact_recursive = g.end_function(fact_recursive, switch);
-
-        let fact = g.start_function();
-        let fact_rec_input = g.insert_node(Node::ConstructTuple {
-            data: vec![fact.use_input(), one],
-        });
-        let fact_rec_call = g.insert_node(Node::FunctionApplication {
-            function: fact_recursive,
-            input: fact_rec_input,
-        });
-        let fact = g.end_function(fact, fact_rec_call);
-
-        let seven = g.insert_node(Node::Constant {
-            value: PassedData::Int(7),
-        });
-
-        let fact_call = g.insert_node(Node::FunctionApplication {
-            function: fact,
-            input: seven,
-        });
-        let graph = g.finalise(fact_call);
-        graph.create_image("example").unwrap();
-    }
-
-    // Non tail recursive version
-    {
-        let mut g = GraphBuilder::new();
-
-        let fact = g.start_function();
-        let one = g.insert_node(Node::Constant {
-            value: PassedData::Int(1),
-        });
-        let zero = g.insert_node(Node::Constant {
-            value: PassedData::Int(0),
-        });
-        let minus_one = g.insert_node(Node::Constant {
-            value: PassedData::Int(-1),
-        });
-        let n_pred = g.insert_node(Node::Add {
-            left: fact.use_input(),
-            right: minus_one,
-        });
-        let next_call = g.insert_node(Node::FunctionApplication {
-            function: fact.use_function(),
-            input: n_pred,
-        });
-
-        let product = g.insert_node(Node::Multiply {
-            left: fact.use_input(),
-            right: next_call,
-        });
-
-        let is_zero = g.insert_node(Node::Equality {
-            left: fact.use_input(),
-            right: zero,
-        });
-
-        let switch = g.insert_node(Node::IfThenElse {
-            condition: is_zero,
-            on_true: one,
-            on_false: product,
-        });
-        let fact = g.end_function(fact, switch);
-        let input = g.insert_node(Node::Constant {
-            value: PassedData::Int(7),
-        });
-        let call = g.insert_node(Node::FunctionApplication {
-            function: fact,
-            input,
-        });
-        let fact_non_tail = g.finalise(call);
-        fact_non_tail.create_image("example2").unwrap();
-    }
-
-    // Ideal
-    // ```rs
-    // {
-    //     let g = GraphBuilder::new();
-    //
-    //     let one: NodeID<i32> = g.add_node(node::constant(1));
-    //     let zero: NodeID<i32> = g.add_node(node::constant(0));
-    //     let minus_one: NodeID<i32> = g.add_node(node::constant(-1));
-    //
-    //     let double_one: NodeID<i32> = g.add_node(node::add(one, one));
-    //
-    //     let factorial: NodeID<Function<i32, i32>> = g.function(
-    //         |factorial: NodeID<Function<i32, i32>>, n: NodeID<i32>| {
-    //             let is_zero: NodeID<bool> = g.add_node(node::equals(input, zero));
-    //
-    //             let n_pred: NodeID<i32> = g.add_node(node::add(n, minus_one));
-    //             let n_pred_fact: NodeID<i32> = g.add_node(node::call(factorial, n_pred));
-    //             let product = g.add_node(node::mul(
-    //                 n, n_pred_fact
-    //             ));
-    //
-    //             node::switch(is_zero, one, product);
-    //         }
-    //     )
-    //
-    //     let seven: NodeID<i32> = g.add_node(node::constant(7));
-    //     lete graph = g.end(node::call(factorial, seven));
-    // }
-    // ```
-}
-
-*/
 
 pub fn main() {
-    let mut g = Graph::new();
-    let a = g.insert_node(TestNodes::B {
-        colour: "#ff0000".to_string(),
-    });
-    let _b = g.insert_node(TestNodes::A {
-        parent: a,
-        name: "john".to_string(),
-    });
-    let _c = g.insert_node(TestNodes::A {
-        parent: a,
-        name: "James".to_string(),
-    });
+    // let mut g = Graph::new();
+    // let a = g.insert_node(TestNodes::B {
+    //     colour: "#ff0000".to_string(),
+    // });
+    // let _b = g.insert_node(TestNodes::A {
+    //     parent: a,
+    //     name: "john".to_string(),
+    // });
+    // let _c = g.insert_node(TestNodes::A {
+    //     parent: a,
+    //     name: "James".to_string(),
+    // });
 
-    let _d = g.insert_node(TestNodes::B {
-        colour: "#44dd55".to_string(),
-    });
+    // let _d = g.insert_node(TestNodes::B {
+    //     colour: "#44dd55".to_string(),
+    // });
 
+    // println!("{}", g.render());
+
+    let g = gull::make_graph();
     println!("{}", g.render());
-}
-
-#[derive(Clone, PartialEq, Eq, Hash)]
-enum TestNodes {
-    A { parent: NodeID, name: String },
-    B { colour: String },
-}
-
-impl ComputationNode for TestNodes {
-    fn get_inputs(&self) -> Vec<NodeID> {
-        match self {
-            TestNodes::A { parent, name: _ } => vec![*parent],
-            TestNodes::B { colour: _ } => vec![],
-        }
-    }
-
-    fn node_eq(&self, other: &Self) -> bool {
-        self == other
-    }
-
-    fn node_hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        hash::Hash::hash(self, state);
-    }
-}
-
-impl RenderNode for TestNodes {
-    fn get_setup() {}
-
-    fn make_edge_attributes(_from: &Self, _to: &Self) -> String {
-        "label = \"Child of\"".to_string()
-    }
-
-    fn make_node_attributes(node: &Self) -> String {
-        match node {
-            TestNodes::A { parent: _, name } => format!(r#"label = "{}""#, name),
-            TestNodes::B { colour } => format!(r#"color = "{}""#, colour),
-        }
-    }
 }

@@ -2,23 +2,6 @@ use std::collections::HashMap;
 
 use crate::node::{ComputationNode, NodeID, RenderNode};
 
-#[derive(Debug, Clone)]
-struct UniqueNodeWrapper<Node: ComputationNode>(Node);
-
-impl<Node: ComputationNode> PartialEq for UniqueNodeWrapper<Node> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.node_eq(&other.0)
-    }
-}
-
-impl<Node: ComputationNode> Eq for UniqueNodeWrapper<Node> {}
-
-impl<Node: ComputationNode> std::hash::Hash for UniqueNodeWrapper<Node> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.node_hash(state);
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct NodeUsesPair<Node: ComputationNode> {
     node: Node,
@@ -30,7 +13,7 @@ pub struct Graph<Node: ComputationNode> {
     /// Maps from the node's [`NodeID`] to the node itself, and the [`NodeID`]s of
     /// everything that takes it as an input
     nodes_graph: HashMap<NodeID, NodeUsesPair<Node>>,
-    recognised_nodes: HashMap<UniqueNodeWrapper<Node>, NodeID>,
+    recognised_nodes: HashMap<Node::ReducedForm, NodeID>,
     used_ids: u32,
 }
 
@@ -42,7 +25,7 @@ impl<Node: ComputationNode> Graph<Node> {
         id
     }
 
-    /// Creates a new [`Graph<N>`].
+    /// Creates a new [`Graph<Node>`].
     pub fn new() -> Self {
         Self {
             nodes_graph: HashMap::new(),
@@ -52,15 +35,14 @@ impl<Node: ComputationNode> Graph<Node> {
     }
 
     pub fn insert_node(&mut self, node: Node) -> NodeID {
-        if let Some(id) = self.recognised_nodes.get(&UniqueNodeWrapper(node.clone())) {
+        if let Some(id) = self.recognised_nodes.get(&node.reduce()) {
             *id
         } else {
             let id = self.reserve_id();
 
             // Cache that this node has been recognised, so no
             // duplicate nodes are added to the graph
-            self.recognised_nodes
-                .insert(UniqueNodeWrapper(node.clone()), id);
+            self.recognised_nodes.insert(node.reduce(), id);
 
             // Add this node's id to the `uses` field of all
             // input nodes
