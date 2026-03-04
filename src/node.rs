@@ -18,4 +18,12 @@ pub trait ComputationNode: Clone {
 
 pub trait RenderNode {
     fn get_setup();
+
+    fn make_edge_attributes(_from: &Self, _to: &Self) -> String {
+        "".to_string()
+    }
+
+    fn make_node_attributes(_node: &Self) -> String {
+        "".to_string()
+    }
 }

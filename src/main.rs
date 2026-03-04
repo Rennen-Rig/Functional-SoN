@@ -1,5 +1,13 @@
 //use crate::nodes::{GraphBuilder, Node, PassedData};
 
+use core::hash;
+use std::{fmt::Display, process::Command, sync::Arc};
+
+use crate::{
+    graph::Graph,
+    node::{ComputationNode, NodeID, RenderNode},
+};
+
 pub mod graph;
 pub mod node;
 //pub mod nodes;
@@ -167,5 +175,60 @@ fn main() {
 */
 
 pub fn main() {
-    todo!()
+    let mut g = Graph::new();
+    let a = g.insert_node(TestNodes::B {
+        colour: "#ff0000".to_string(),
+    });
+    let _b = g.insert_node(TestNodes::A {
+        parent: a,
+        name: "john".to_string(),
+    });
+    let _c = g.insert_node(TestNodes::A {
+        parent: a,
+        name: "James".to_string(),
+    });
+
+    let _d = g.insert_node(TestNodes::B {
+        colour: "#44dd55".to_string(),
+    });
+
+    println!("{}", g.render());
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+enum TestNodes {
+    A { parent: NodeID, name: String },
+    B { colour: String },
+}
+
+impl ComputationNode for TestNodes {
+    fn get_inputs(&self) -> Vec<NodeID> {
+        match self {
+            TestNodes::A { parent, name: _ } => vec![*parent],
+            TestNodes::B { colour: _ } => vec![],
+        }
+    }
+
+    fn node_eq(&self, other: &Self) -> bool {
+        self == other
+    }
+
+    fn node_hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        hash::Hash::hash(self, state);
+    }
+}
+
+impl RenderNode for TestNodes {
+    fn get_setup() {}
+
+    fn make_edge_attributes(_from: &Self, _to: &Self) -> String {
+        "label = \"Child of\"".to_string()
+    }
+
+    fn make_node_attributes(node: &Self) -> String {
+        match node {
+            TestNodes::A { parent: _, name } => format!(r#"label = "{}""#, name),
+            TestNodes::B { colour } => format!(r#"color = "{}""#, colour),
+        }
+    }
 }

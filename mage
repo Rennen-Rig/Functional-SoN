@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+# Shell script to convert files from graphviz DOT format to svg
+
+if ! command -v dot >/dev/null; then
+    printf "Graphviz not installed\n" >&2
+    exit 127
+fi
+
+
+POSITIONAL_ARGS=()
+output_set=false
+input_set=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+    -o|--output)
+        output_set=true
+        output="$2"
+        shift
+        ;;
+    -i|--input)
+        input_set=true
+        input="$2"     
+        shift
+        ;;
+    *)
+        printf "Unknown argument: %s\n" $1 >&2
+        exit 1
+        ;;
+    esac
+    shift
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+echo $input_set
+echo $output_set
+
+if [ $input_set = true ] && [ $output_set = true ]; then
+    dot -Tsvg -o "$output.svg" < "$input"
+    
+elif [ $input_set = true ]; then
+    dot -Tsvg -o /dev/stdout < "$input"
+    
+elif [ $output_set = true ]; then
+    dot -Tsvg -o "$output.svg" < /dev/stdin
+    
+else
+    dot -Tsvg -o /dev/stdout < /dev/stdin
+    
+fi
+
