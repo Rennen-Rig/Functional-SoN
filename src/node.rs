@@ -1,5 +1,7 @@
 use std::hash::Hash;
 
+use crate::graph::{Edge, render};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct NodeID(pub(crate) u32);
 
@@ -17,17 +19,10 @@ pub trait ComputationNode: Clone {
     fn get_inputs(&self) -> Vec<NodeID>;
 }
 
-pub trait RenderNode: ComputationNode {
-    fn get_setup();
+pub trait RenderNode {
+    fn graph_labels() -> Vec<String>;
 
-    fn edges_and_attributes(&self) -> Vec<(NodeID, String)> {
-        self.get_inputs()
-            .iter()
-            .map(|id| (*id, "".to_string()))
-            .collect()
-    }
+    fn edges_and_attributes(&self) -> Vec<render::ArgumentAttributes>;
 
-    fn make_node_attributes(&self) -> String {
-        "".to_string()
-    }
+    fn make_node_attributes(&self) -> render::Attributes;
 }

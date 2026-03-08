@@ -1,6 +1,22 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
-use crate::node::{ComputationNode, NodeID, RenderNode};
+use crate::{
+    graph::render::{ArgumentAttributes, Attribute, Attributes, EdgeAttributes},
+    node::{ComputationNode, NodeID, RenderNode},
+};
+
+pub mod render;
+
+pub struct Edge {
+    pub argument: NodeID,
+    pub result: NodeID,
+}
+
+impl Display for Edge {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} -> {}", self.argument.0, self.result.0)
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct NodeUsesPair<Node: ComputationNode> {
@@ -62,50 +78,90 @@ impl<Node: ComputationNode> Graph<Node> {
     }
 }
 
-impl<Node: ComputationNode + RenderNode> Graph<Node> {
-    pub fn render(&self) -> String {
-        use petgraph::{Graph as PetGraph, graph::NodeIndex};
+impl<Node: RenderNode + ComputationNode> Graph<Node> {
+    // pub fn render(&self) -> String {
+    //     use petgraph::{Graph as PetGraph, graph::NodeIndex};
 
-        let mut pet_graph: PetGraph<String, String> = PetGraph::new();
-        let mut id_to_index: HashMap<NodeID, NodeIndex<u32>> = HashMap::new();
+    //     let mut pet_graph: PetGraph<String, String> = PetGraph::new();
+    //     let mut id_to_index: HashMap<NodeID, NodeIndex<u32>> = HashMap::new();
+
+    //     for (node_id, NodeUsesPair { node, uses: _ }) in self.nodes_graph.iter() {
+    //         let p_index = pet_graph.add_node(node.make_node_attributes().trim().to_string());
+    //         id_to_index.insert(*node_id, p_index);
+    //     }
+
+    //     for (target_node_id, NodeUsesPair { node, uses: _ }) in self.nodes_graph.iter() {
+    //         let target_index = id_to_index
+    //             .get(target_node_id)
+    //             .expect("Added an edge for a node that isn't in the mapping");
+
+    //         for (source_node_id, edge_attrs) in node.edges_and_attributes() {
+    //             let source_index = id_to_index
+    //                 .get(&source_node_id)
+    //                 .expect("Added an edge for a node that isn't in the mapping");
+
+    //             pet_graph.add_edge(*source_index, *target_index, edge_attrs.trim().to_string());
+    //         }
+    //     }
+
+    //     use petgraph::{
+    //         dot::{self, Config},
+    //         graph::EdgeReference,
+    //     };
+
+    //     let get_edge_attrs =
+    //         |_graph, edge_ref: EdgeReference<'_, String>| edge_ref.weight().clone();
+
+    //     let get_node_attrs =
+    //         |_graph, (_node_index, attributes): (NodeIndex, &String)| attributes.clone();
+
+    //     let graph_dot = dot::Dot::with_attr_getters(
+    //         &pet_graph,
+    //         &[Config::EdgeNoLabel, Config::NodeNoLabel],
+    //         &get_edge_attrs,
+    //         &get_node_attrs,
+    //     );
+
+    //     format!("{:?}", graph_dot)
+    // }
+
+    pub fn render2(&self) -> String {
+        let graph_labels = Node::graph_labels().join(" ");
+
+        let mut nodes: Vec<(NodeID, Attributes)> = vec![];
+        let mut edges: Vec<EdgeAttributes> = vec![];
 
         for (node_id, NodeUsesPair { node, uses: _ }) in self.nodes_graph.iter() {
-            let p_index = pet_graph.add_node(node.make_node_attributes().trim().to_string());
-            id_to_index.insert(*node_id, p_index);
+            nodes.push((*node_id, node.make_node_attributes()));
+
+            node.edges_and_attributes().into_iter().for_each(
+                |ArgumentAttributes {
+                     argument,
+                     attributes,
+                 }| {
+                    edges.push(EdgeAttributes {
+                        edge: Edge {
+                            argument,
+                            result: *node_id,
+                        },
+                        attributes,
+                    })
+                },
+            );
         }
 
-        for (target_node_id, NodeUsesPair { node, uses: _ }) in self.nodes_graph.iter() {
-            let target_index = id_to_index
-                .get(target_node_id)
-                .expect("Added an edge for a node that isn't in the mapping");
+        let formatted_nodes = nodes
+            .into_iter()
+            .map(|(node_id, attributes)| format!("{} {}", node_id.0, attributes))
+            .collect::<Vec<String>>()
+            .join(" ");
 
-            for (source_node_id, edge_attrs) in node.edges_and_attributes() {
-                let source_index = id_to_index
-                    .get(&source_node_id)
-                    .expect("Added an edge for a node that isn't in the mapping");
+        let formatted_edges = edges
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<String>>()
+            .join(" ");
 
-                pet_graph.add_edge(*source_index, *target_index, edge_attrs.trim().to_string());
-            }
-        }
-
-        use petgraph::{
-            dot::{self, Config},
-            graph::EdgeReference,
-        };
-
-        let get_edge_attrs =
-            |_graph, edge_ref: EdgeReference<'_, String>| edge_ref.weight().clone();
-
-        let get_node_attrs =
-            |_graph, (_node_index, attributes): (NodeIndex, &String)| attributes.clone();
-
-        let graph_dot = dot::Dot::with_attr_getters(
-            &pet_graph,
-            &[Config::EdgeNoLabel, Config::NodeNoLabel],
-            &get_edge_attrs,
-            &get_node_attrs,
-        );
-
-        format!("{:?}", graph_dot)
+        format!("digraph {{ {graph_labels} {formatted_nodes} {formatted_edges} }}")
     }
 }

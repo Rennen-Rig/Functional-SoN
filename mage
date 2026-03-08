@@ -2,8 +2,6 @@
 
 # Shell script to convert files from graphviz DOT format to svg
 
-set -e
-
 if ! command -v dot >/dev/null; then
     printf "Graphviz not installed\n" >&2
     exit 127
