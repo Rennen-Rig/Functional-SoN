@@ -1,0 +1,40 @@
+digraph {
+	graph [bgcolor=green];
+	1	[color="#9212b4",
+		label=15,
+		shape=box];
+	4	[color="#44aa55",
+		label="+",
+		shape=circle];
+	1 -> 4;
+	6	[color="#44aa55",
+		label="+",
+		shape=circle];
+	4 -> 6;
+	5	[color="#44aa55",
+		label="+",
+		shape=circle];
+	4 -> 5;
+	3	[color="#9212b4",
+		label=3,
+		shape=box];
+	7	[color="#44aa55",
+		label="+",
+		shape=circle];
+	3 -> 7;
+	8	[color="#ffaa11",
+		label=">",
+		shape=Msquare];
+	7 -> 8	[label=right];
+	6 -> 8	[label=left];
+	2	[color="#9212b4",
+		label=149,
+		shape=box];
+	2 -> 7;
+	2 -> 5;
+	0	[color="#9212b4",
+		label=414,
+		shape=box];
+	0 -> 4;
+	5 -> 6;
+}
